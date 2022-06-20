@@ -11,12 +11,14 @@ public class Game : Node2D
     public override void _EnterTree()
     {
         serviceLocator = Services.CreateLocator(locator => locator
-            .WithService<IPhysicsService, PhysicsService>()
+            .WithService<IPhysicsService, PhysicsService>(new PhysicsServiceParameters(){
+                World2d = GetWorld2d()
+            })
             .WithService<IInputService, InputService>()
             .WithService<IItemPickingService, ItemPickingService>()
-            .WithService<IEventService, EventService>()
-            .WithParameter(GetNode<EventListener>("EventListener"))
-            .WithParameter(GetWorld2d())
+            .WithService<IEventService, EventService>(new EventServiceParameters(){
+                EventListener = GetNode<EventListener>("EventListener")
+            })
         );
     }
 

@@ -11,7 +11,7 @@ namespace Grate.Services.Input
 
     public class EventService : IEventService
     {
-        public EventService(EventListener eventListener)
+        public EventService([FromParameters("eventListener")] EventListener eventListener)
         {
             eventListener.UnhandledEventOccured += ProcessEvent;
         }
@@ -31,5 +31,9 @@ namespace Grate.Services.Input
                     break;
             }
         }
+    }
+
+    public class EventServiceParameters : IServiceParameters {
+        [ServiceParameter("eventListener")] public EventListener EventListener {get; set;}
     }
 }

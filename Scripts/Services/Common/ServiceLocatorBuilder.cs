@@ -9,10 +9,9 @@ namespace Grate.Services
     {
         public interface IServiceLocatorBuilder
         {
-            IServiceLocatorBuilder WithService<TInterface, TImplementation>()
+            IServiceLocatorBuilder WithService<TInterface, TImplementation>(IServiceParameters parameters = null)
                 where TImplementation : class, TInterface
                 where TInterface : class, IService;
-            IServiceLocatorBuilder WithParameter<T>(T parameter);
         }
 
         private class ServiceLocatorBuilder : IServiceLocatorBuilder
@@ -20,10 +19,10 @@ namespace Grate.Services
             private const BindingFlags startBuildflags = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             private Stack<Type> initiatedServices = new Stack<Type>();
             private Dictionary<Type, Type> types = new Dictionary<Type, Type>();
-            private Dictionary<Type, object> options = new Dictionary<Type, object>();
+            private Dictionary<Type, IServiceParameters> parameters = new Dictionary<Type, IServiceParameters>();
             private Dictionary<Type, IService> services = new Dictionary<Type, IService>();
 
-            public IServiceLocatorBuilder WithService<TInterface, TImplementation>()
+            public IServiceLocatorBuilder WithService<TInterface, TImplementation>(IServiceParameters serviceParameters = null)
                 where TInterface : class, IService
                 where TImplementation : class, TInterface
             {
@@ -34,16 +33,7 @@ namespace Grate.Services
                     throw new InvalidOperationException($"Service {serviceInterface.Name} is already registered.");
 
                 types.Add(serviceInterface, typeof(TImplementation));
-                return this;
-            }
-
-            public IServiceLocatorBuilder WithParameter<T>(T parameter)
-            {
-                var type = typeof(T);
-                if (options.ContainsKey(type))
-                    throw new InvalidOperationException($"Option {type.Name} is already registered. Consider wrapping same parameter types.");
-
-                options.Add(type, parameter);
+                if (serviceParameters != null) parameters.Add(typeof(TImplementation), serviceParameters);
                 return this;
             }
 
@@ -92,28 +82,47 @@ namespace Grate.Services
             private T BuildService<T>() where T : class, IService
             {
                 var constructor = GetConstructor<T>();
+                var hasParams = parameters.TryGetValue(typeof(T), out var providedParameters);
 
                 var cParams = new List<object>();
-                foreach (var paramType in constructor.GetParameters().Select(pInfo => pInfo.ParameterType))
-                    cParams.Add(GetParameter(paramType));
+                foreach (var paramInfo in constructor.GetParameters())
+                {
+                    object parameter;
+                    var paramType = paramInfo.ParameterType;
+                    if (IsService(paramType))
+                    {
+                        if (!services.TryGetValue(paramType, out var dependency))
+                            throw new InvalidOperationException($"Service {paramType.Name} is not registered.");
+                        parameter = dependency;
+                    }
+                    else
+                    {
+                        if (!hasParams) throw new Exception($"Parameter {paramType.Name} is not provided. Provide parameters instance with ServiceParameter attribute attached to properties");
+
+                        var attr = paramInfo.GetCustomAttribute<FromParametersAttribute>();
+                        if (attr is null) throw new Exception($"Parameter {paramType.Name} is not given a FromParameters attribute in constructor");
+
+                        var property = providedParameters
+                            .GetType()
+                            .GetTypeInfo()
+                            .GetProperties()
+                            .FirstOrDefault(i => CheckPropertyTag(i, attr.Tag, paramInfo.Name));
+
+                        parameter = property.GetValue(providedParameters);
+                    }
+                    cParams.Add(parameter);
+                }
 
                 return constructor.Invoke(cParams.ToArray()) as T;
             }
 
-            private object GetParameter(Type paramType)
+            private bool CheckPropertyTag(PropertyInfo p, string tag, string name)
             {
-                if (IsService(paramType))
-                {
-                    if (!services.TryGetValue(paramType, out var dependency))
-                        throw new InvalidOperationException($"Service {paramType.Name} is not registered.");
-                    return dependency;
-                }
-                else
-                {
-                    if (!options.TryGetValue(paramType, out var paramDependency))
-                        throw new InvalidOperationException($"Parameter {paramType.Name} is not registered.");
-                    return paramDependency;
-                }
+                var attr = p.GetCustomAttribute<ServiceParameterAttribute>();
+
+                if (attr is null) throw new Exception($"Property {name} in provided parameters doesn't have a ServiceParameter Attribute attached");
+
+                return String.CompareOrdinal(attr.Tag.ToLower(), tag.ToLower()) == 0;
             }
 
             private bool IsService(Type type)
