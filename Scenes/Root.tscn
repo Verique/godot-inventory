@@ -1,23 +1,17 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=4 format=2]
 
 [ext_resource path="res://Scripts/Game.cs" type="Script" id=1]
 [ext_resource path="res://Scripts/Services/Input/EventListener.cs" type="Script" id=2]
-[ext_resource path="res://Scenes/Inventory.tscn" type="PackedScene" id=3]
 [ext_resource path="res://Scenes/InventoryItem.tscn" type="PackedScene" id=4]
 
 [node name="Game" type="Node2D"]
 z_index = 1
 script = ExtResource( 1 )
 
-[node name="Inventory" parent="." instance=ExtResource( 3 )]
-
-[node name="InventoryItem" parent="Inventory" instance=ExtResource( 4 )]
-position = Vector2( 259, 392 )
-z_index = 1
-
 [node name="EventListener" type="Node2D" parent="."]
 z_index = 1
 script = ExtResource( 2 )
 
-[editable path="Inventory"]
-[editable path="Inventory/InverntoryGrid/InventoryItem"]
+[node name="GUICanvas" type="CanvasLayer" parent="."]
+
+[node name="InventoryItem" parent="GUICanvas" instance=ExtResource( 4 )]
