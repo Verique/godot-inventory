@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://Scripts/Game.cs" type="Script" id=1]
 [ext_resource path="res://Scripts/Services/Input/EventListener.cs" type="Script" id=2]
+[ext_resource path="res://Scripts/TestNode.cs" type="Script" id=3]
 [ext_resource path="res://Scenes/InventoryItem.tscn" type="PackedScene" id=4]
 
 [node name="Game" type="Node2D"]
@@ -15,3 +16,8 @@ script = ExtResource( 2 )
 [node name="GUICanvas" type="CanvasLayer" parent="."]
 
 [node name="InventoryItem" parent="GUICanvas" instance=ExtResource( 4 )]
+
+[node name="TextureRect" type="TextureRect" parent="GUICanvas"]
+margin_right = 40.0
+margin_bottom = 40.0
+script = ExtResource( 3 )

@@ -60,7 +60,6 @@ namespace Grate.Services
                     throw new InvalidOperationException("Cyclic dependency");
 
                 initiatedServices.Push(type);
-                Godot.GD.Print($"put {type} on stack");
 
                 foreach (var dependency in GetDependencies<TS>())
                 {
@@ -75,7 +74,6 @@ namespace Grate.Services
                 }
 
                 var service = BuildService<TS>();
-                Godot.GD.Print($"pop {type} from stack");
                 services[initiatedServices.Pop()] = service;
             }
 

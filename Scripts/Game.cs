@@ -1,6 +1,5 @@
 using Godot;
 using Grate.Services;
-using Grate.Inventory;
 using Grate.Services.Physics;
 using Grate.Services.Input;
 
@@ -15,7 +14,6 @@ public class Game : Node2D
                 World2d = GetWorld2d()
             })
             .WithService<IInputService, InputService>()
-            .WithService<IItemPickingService, ItemPickingService>()
             .WithService<IEventService, EventService>(new EventServiceParameters(){
                 EventListener = GetNode<EventListener>("EventListener")
             })
@@ -24,9 +22,5 @@ public class Game : Node2D
 
     public override void _Ready()
     {
-        // test
-        serviceLocator.Get<IItemPickingService>().RegisterItem(GetNode<IInventoryItem>("/root/Game/Inventory/InverntoryGrid/InventoryItem"));
-        serviceLocator.Get<IItemPickingService>().RegisterItem(GetNode<IInventoryItem>("/root/Game/Inventory/InverntoryGrid/InventoryItem2"));
-        serviceLocator.Get<IItemPickingService>().RegisterItem(GetNode<IInventoryItem>("/root/Game/Inventory/InventoryItem"));
     }
 }
