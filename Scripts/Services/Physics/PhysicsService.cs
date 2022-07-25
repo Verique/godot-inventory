@@ -13,7 +13,7 @@ namespace Grate.Services.Physics
     {
         private World2D _world;
 
-        public PhysicsService([FromParameters("w2d")] World2D world)
+        public PhysicsService(World2D world)
         {
             _world = world;
         }
@@ -33,9 +33,5 @@ namespace Grate.Services.Physics
 
             return hitObjs.OrderBy(o => o.ZIndex).ThenBy(o => o.GetIndex()).FirstOrDefault();
         }
-    }
-
-    public class PhysicsServiceParameters : IServiceParameters {
-        [ServiceParameter("w2d")] public World2D World2d {get; set;}
     }
 }

@@ -9,9 +9,10 @@ namespace Grate.Services
     {
         public interface IServiceLocatorBuilder
         {
-            IServiceLocatorBuilder WithService<TInterface, TImplementation>(IServiceParameters parameters = null)
+            IServiceLocatorBuilder WithService<TInterface, TImplementation>()
                 where TImplementation : class, TInterface
                 where TInterface : class, IService;
+            IServiceLocatorBuilder WithOption<T>(T option);
         }
 
         private class ServiceLocatorBuilder : IServiceLocatorBuilder
@@ -19,23 +20,16 @@ namespace Grate.Services
             private const BindingFlags startBuildflags = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             private Stack<Type> initiatedServices = new Stack<Type>();
             private Dictionary<Type, Type> types = new Dictionary<Type, Type>();
-            private Dictionary<Type, IServiceParameters> parameters = new Dictionary<Type, IServiceParameters>();
             private Dictionary<Type, IService> services = new Dictionary<Type, IService>();
+            private Dictionary<Type, object> options = new Dictionary<Type, object>();
 
-            public IServiceLocatorBuilder WithService<TInterface, TImplementation>(IServiceParameters serviceParameters = null)
+            public IServiceLocatorBuilder WithService<TInterface, TImplementation>()
                 where TInterface : class, IService
-                where TImplementation : class, TInterface
-            {
+                where TImplementation : class, TInterface =>
+                AddTo(types, typeof(TInterface), typeof(TImplementation));
 
-                var serviceInterface = typeof(TInterface);
-
-                if (types.ContainsKey(serviceInterface))
-                    throw new InvalidOperationException($"Service {serviceInterface.Name} is already registered.");
-
-                types.Add(serviceInterface, typeof(TImplementation));
-                if (serviceParameters != null) parameters.Add(typeof(TImplementation), serviceParameters);
-                return this;
-            }
+            public IServiceLocatorBuilder WithOption<T>(T option) =>
+                AddTo(options, typeof(T), option);
 
             public ServiceLocator Build()
             {
@@ -80,53 +74,17 @@ namespace Grate.Services
             private T BuildService<T>() where T : class, IService
             {
                 var constructor = GetConstructor<T>();
-                var hasParams = parameters.TryGetValue(typeof(T), out var providedParameters);
 
-                var cParams = new List<object>();
-                foreach (var paramInfo in constructor.GetParameters())
-                {
-                    object parameter;
-                    var paramType = paramInfo.ParameterType;
-                    if (IsService(paramType))
-                    {
-                        if (!services.TryGetValue(paramType, out var dependency))
-                            throw new InvalidOperationException($"Service {paramType.Name} is not registered.");
-                        parameter = dependency;
-                    }
-                    else
-                    {
-                        if (!hasParams) throw new Exception($"Parameter {paramType.Name} is not provided. Provide parameters instance with ServiceParameter attribute attached to properties");
-
-                        var attr = paramInfo.GetCustomAttribute<FromParametersAttribute>();
-                        if (attr is null) throw new Exception($"Parameter {paramType.Name} is not given a FromParameters attribute in constructor");
-
-                        var property = providedParameters
-                            .GetType()
-                            .GetTypeInfo()
-                            .GetProperties()
-                            .FirstOrDefault(i => CheckPropertyTag(i, attr.Tag, paramInfo.Name));
-
-                        parameter = property.GetValue(providedParameters);
-                    }
-                    cParams.Add(parameter);
-                }
+                var cParams = constructor
+                    .GetParameters()
+                    .Select(paramInfo => GetParameterByKey(paramInfo.ParameterType))
+                    .ToArray();
 
                 return constructor.Invoke(cParams.ToArray()) as T;
             }
 
-            private bool CheckPropertyTag(PropertyInfo p, string tag, string name)
-            {
-                var attr = p.GetCustomAttribute<ServiceParameterAttribute>();
-
-                if (attr is null) throw new Exception($"Property {name} in provided parameters doesn't have a ServiceParameter Attribute attached");
-
-                return String.CompareOrdinal(attr.Tag.ToLower(), tag.ToLower()) == 0;
-            }
-
-            private bool IsService(Type type)
-            {
-                return type.GetInterface("IService") != null;
-            }
+            private bool IsService(Type type) => 
+                type.GetInterface("IService") != null;
 
             private List<Type> GetDependencies<T>() where T : class
             {
@@ -142,6 +100,31 @@ namespace Grate.Services
                 if (constructors.Length > 1)
                     throw new InvalidOperationException($"Service {typeof(T).Name} has more than one constructors");
                 return constructors[0];
+            }
+
+            private IServiceLocatorBuilder AddTo<T>(IDictionary<Type, T> dict, Type type, T value)
+            {
+                var serviceOrOption = type is IService ? "Service" : "Option";
+                if (dict.ContainsKey(type))
+                    throw new InvalidOperationException($"{serviceOrOption} {type.Name} is already registered.");
+
+                dict.Add(type, value);
+                return this;
+            }
+
+            private object GetParameterByKey(Type key){
+                if (IsService(key))
+                    return GetParameterByKeyFrom(services, key);
+                else
+                    return GetParameterByKeyFrom(options, key);
+            }
+
+            private object GetParameterByKeyFrom<T>(IDictionary<Type, T> dict, Type key)
+            {
+                var serviceOrOption = key is IService ? "Service" : "Option";
+                if (!dict.TryGetValue(key, out var dependency))
+                    throw new InvalidOperationException($"{serviceOrOption} {key.Name} is not registered.");
+                return dependency;
             }
         }
     }

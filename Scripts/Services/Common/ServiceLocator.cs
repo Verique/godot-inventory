@@ -5,8 +5,6 @@ namespace Grate.Services
 {
     public interface IService { }
 
-    public interface IServiceParameters { }
-
     public interface IServiceLocator
     {
         TInterface Get<TInterface>() where TInterface : class, IService;

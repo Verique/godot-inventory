@@ -1,7 +1,7 @@
 using Godot;
 using Grate.Services;
 using Grate.Services.Physics;
-using Grate.Services.Input;
+using Grate.Inventory;
 
 public class Game : Node2D
 {
@@ -10,17 +10,12 @@ public class Game : Node2D
     public override void _EnterTree()
     {
         serviceLocator = Services.CreateLocator(locator => locator
-            .WithService<IPhysicsService, PhysicsService>(new PhysicsServiceParameters(){
-                World2d = GetWorld2d()
-            })
-            .WithService<IInputService, InputService>()
-            .WithService<IEventService, EventService>(new EventServiceParameters(){
-                EventListener = GetNode<EventListener>("EventListener")
-            })
-        );
-    }
+            .WithOption(GetWorld2d())
+            .WithOption(GetNode<InventoryNode>("GUICanvas/Inventory"))
+            .WithOption(GetNode<Button>("GUICanvas/Button"))
 
-    public override void _Ready()
-    {
+            .WithService<IPhysicsService, PhysicsService>()
+            .WithService<IInventoryService, InventoryService>()
+        );
     }
 }
