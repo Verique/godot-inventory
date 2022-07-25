@@ -12,8 +12,8 @@ namespace Grate.Types
     [System.Serializable]
     public class Vector2Int
     {
-        public int x;
-        public int y;
+        public int x = 0;
+        public int y = 0;
 
         public Vector2Int(int x, int y)
         {
