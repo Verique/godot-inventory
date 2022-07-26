@@ -29,14 +29,14 @@ namespace Grate.Inventory
             return _modulesByLayout.Any(pair => pair.Value.HasPoint(point));
         }
 
-        public InventoryItemNode(InventoryItem item, InventoryNode inventory, Vector2Int gridPosition)
+        public InventoryItemNode(IInventoryItemInfo item, InventoryNode inventory, Vector2Int gridPosition)
         {
             this.MouseFilter = MouseFilterEnum.Ignore;
             _modulesByLayout = new Dictionary<Vector2Int, InventoryItemModuleNode>();
             foreach (var point in item.Layout)
             {
                 var pos = (point) * inventory.CellSize;
-                var module = new InventoryItemModuleNode(item.color, pos.ToVector2());
+                var module = new InventoryItemModuleNode(item.Color, pos.ToVector2());
                 this.AddChild(module);
                 _offset = Vector2.One * inventory.CellSize / 2;
                 _modulesByLayout.Add(point, module);

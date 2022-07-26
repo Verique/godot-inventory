@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using Grate.Types;
 
@@ -7,90 +8,89 @@ namespace Grate.Inventory
 {
     public class InventoryModel : Reference
     {
-        public event Action<IReadOnlyCollection<InventoryItem>, InventoryItem> ModelChanged;
-
         public readonly Vector2Int Size;
-
-        private InventoryModule[,] _cells;
-        private InventoryItem _pickedItem;
-        private List<InventoryItem> _items;
+        public event Action<IReadOnlyCollection<IInventoryItemInfo>, IInventoryItemInfo> ModelChanged;
+        
+        private Dictionary<Vector2Int, InventoryItem> _itemsByPosition = new Dictionary<Vector2Int, InventoryItem>();
+        private InventoryItem _pickedItem = null;
 
         public InventoryModel(Vector2Int size)
         {
             Size = size;
-            _items = new List<InventoryItem>();
-            _cells = new InventoryModule[size.x, size.y];
         }
 
         public void InvokeModelChange()
         {
-            ModelChanged?.Invoke(_items, _pickedItem);
+            ModelChanged?.Invoke(_itemsByPosition.Values.Distinct().ToList(), _pickedItem);
         }
 
-        public void Add(InventoryItem item)
+        public void Add(InventoryItem item, Vector2Int pos)
         {
-            foreach (var cell in item.GetModuleCoordinates())
+            if (!CanPlace(item, pos)) throw new Exception($"Place {pos} isn't valid");
+
+            item.MoveTo(pos);
+            var cellsToOccupy = item.GetModuleCoordinates();
+
+            foreach (var cell in cellsToOccupy)
             {
-                if (!CheckCoordinatesValid(cell))
-                    throw new Exception($"Place [{cell.x},{cell.y}] isn't valid");
-                if (this[cell] != null)
-                    throw new Exception($"Place [{cell.x},{cell.y}] is occupied");
-                this[cell] = new InventoryModule(item);
+                _itemsByPosition.Add(cell, item);
             }
 
-            _items.Add(item);
             InvokeModelChange();
         }
 
         public void Pick(Vector2Int coord)
         {
-            var item = this[coord].Item;
+            if (!_itemsByPosition.TryGetValue(coord, out var item)) throw new Exception($"No item at {coord}");
+
             foreach (var moduleCoord in item.GetModuleCoordinates())
             {
-                this[moduleCoord] = null;
+                if (_itemsByPosition.ContainsKey(moduleCoord)) _itemsByPosition.Remove(moduleCoord);
+                else throw new Exception($"Inventory doesn't contain anything at {moduleCoord}, but the item is telling otherwise");
             }
+
             _pickedItem = item;
-            _pickedItem.PickPos = item.MainPos - coord;
+            _pickedItem.Pick(coord);
             InvokeModelChange();
         }
 
-        //TODO: put problems with MainPos
-        public void Put(Vector2Int pos)
+        public void Put(Vector2Int putPos)
         {
             if (_pickedItem == null) throw new Exception("Nothing's picked");
 
-            _pickedItem.MainPos = pos + _pickedItem.PickPos;
-            if (!CanPlace(_pickedItem)) return; //throw new Exception("Can't place item here");
+            if (!CanPlace(_pickedItem, putPos + _pickedItem.PickOffset)) return;
 
+            _pickedItem.Put(putPos);
             foreach (var coord in _pickedItem.GetModuleCoordinates())
             {
-                this[coord] = new InventoryModule(_pickedItem);
+                _itemsByPosition.Add(coord, _pickedItem);
             }
 
             _pickedItem = null;
             InvokeModelChange();
         }
 
-        public bool CanPlace(InventoryItem item)
+        public bool CanPlace(InventoryItem item, Vector2Int placePos)
         {
-            foreach (var cell in item.GetModuleCoordinates())
+            foreach (var layoutItem in item.Layout)
             {
+                var cell = layoutItem + placePos;
+
                 if (!CheckCoordinatesValid(cell))
                     return false;
-                if (this[cell] != null)
+                if (_itemsByPosition.ContainsKey(cell))
                     return false;
             }
             return true;
         }
-
-        public bool CanPut => CanPlace(_pickedItem);
 
         public bool CheckCoordinatesValid(Vector2Int coords)
         {
             var (x, y) = coords.Unpack();
             return !(x >= Size.x || x < 0 || y >= Size.y || y < 0);
         }
-
-        public InventoryModule this[Vector2Int v] { get => _cells[v.x, v.y]; private set => _cells[v.x, v.y] = value; }
+        
+        public bool CanPut(Vector2Int putPos) => CanPlace(_pickedItem, putPos + _pickedItem.PickOffset);
+        public bool HasItemAt(Vector2Int pos) => _itemsByPosition.ContainsKey(pos);
     };
 }

@@ -1,4 +1,3 @@
-using System;
 using Godot;
 using Grate.Services;
 using Grate.Types;
@@ -24,26 +23,25 @@ namespace Grate.Inventory
         // TODO Move all non relevant to view thigs as size and conversion methods
         private void OnItemPut(Vector2Int pos)
         {
-            model.Put(pos);
+            if (model.CanPut(pos)) model.Put(pos);
         }
 
         private void OnItemPicked(Vector2Int pos)
         {
-            if (model.CheckCoordinatesValid(pos) && model[pos] != null)
-                model.Pick(pos);
+            if (model.CheckCoordinatesValid(pos) && model.HasItemAt(pos)) model.Pick(pos);
         }
 
         private void Add()
         {
-            var item = new InventoryItem(DateTime.Now.ToShortDateString());
+            var item = new InventoryItem();
 
             for (int x = 0; x < model.Size.x; x++)
                 for (int y = 0; y < model.Size.y; y++)
                 {
-                    item.MainPos = new Vector2Int(x, y);
-                    if (model.CanPlace(item))
+                    var newPos = new Vector2Int(x, y);
+                    if (model.CanPlace(item, newPos))
                     {
-                        model.Add(item);
+                        model.Add(item, newPos);
                         return;
                     }
                 }

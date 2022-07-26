@@ -6,36 +6,51 @@ using Grate.Types;
 
 namespace Grate.Inventory
 {
-    public class InventoryItem
+    public interface IInventoryItemInfo
+    {
+        IReadOnlyCollection<Vector2Int> Layout { get; }
+        Color Color { get; }
+        Vector2Int GridPos { get; }
+        Vector2Int PickOffset { get; }
+        bool IsPicked { get; }
+    }
+
+    public class InventoryItem : IInventoryItemInfo
     {
         public IReadOnlyCollection<Vector2Int> Layout { get; }
-        public string Message { get; }
-        public Color color;
+        public Color Color { get; private set; }
+        public Vector2Int GridPos { get; private set; }
+        public Vector2Int PickOffset { get; private set; }
+        public bool IsPicked => PickOffset != null;
 
-        public Vector2Int MainPos { get; set; }
-        public Vector2Int PickPos { get; set; }
-
-        public InventoryItem(string message, Vector2Int mainPos = null)
+        public InventoryItem()
         {
             var rng = new RandomNumberGenerator();
             rng.Randomize();
-            color = Color.Color8((byte)rng.RandiRange(0, 255), (byte)rng.RandiRange(0, 255), (byte)rng.RandiRange(0, 255));
+            Color = Color.Color8((byte)rng.RandiRange(0, 255), (byte)rng.RandiRange(0, 255), (byte)rng.RandiRange(0, 255));
 
             Layout = InventoryUtils.GenerateLayout(3);
-            Message = message;
-            MainPos = mainPos;
         }
 
         public IReadOnlyCollection<Vector2Int> GetModuleCoordinates()
         {
-            return Layout.Select(x => x + MainPos).ToList();
+            return Layout.Select(x => x + GridPos).ToList();
         }
 
-    }
+        public void Pick(Vector2Int pickPos)
+        {
+            PickOffset = GridPos - pickPos;
+        }
 
-    public class InventoryModule
-    {
-        public InventoryItem Item { get; private set; }
-        public InventoryModule(InventoryItem item) { Item = item; }
+        public void Put(Vector2Int putPos)
+        {
+            GridPos = putPos + PickOffset;
+            PickOffset = null;
+        }
+
+        public void MoveTo(Vector2Int newPos)
+        {
+            GridPos = newPos;
+        }
     }
 }

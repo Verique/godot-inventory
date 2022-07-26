@@ -21,20 +21,21 @@ namespace Grate.Inventory
 
         private Vector2? _cursorPos;
 
-        public void HandleModelChange(IReadOnlyCollection<InventoryItem> items, InventoryItem pickedItem)
+        public void HandleModelChange(IReadOnlyCollection<IInventoryItemInfo> items, IInventoryItemInfo pickedItem)
         {
             _pickedItem = null;
             foreach (var item in items)
             {
                 var node = FindOrCreateItemNode(item);
-                if (item == pickedItem)
-                {
-                    _pickedItem = node;
-                    _pickOffset = item.PickPos;
-                    node.Pick();
-                }
-                else
-                    node.Put(LeftTopPointOfCell(item.MainPos));
+                node.Put(LeftTopPointOfCell(item.GridPos));
+            }
+
+            if (pickedItem != null)
+            {
+                var node = FindOrCreateItemNode(pickedItem);
+                _pickOffset = pickedItem.PickOffset;
+                node.Pick();
+                _pickedItem = node;
             }
         }
 
@@ -102,7 +103,7 @@ namespace Grate.Inventory
             }
         }
 
-        private InventoryItemNode FindOrCreateItemNode(InventoryItem item)
+        private InventoryItemNode FindOrCreateItemNode(IInventoryItemInfo item)
         {
             var success = _items.TryGetValue(item.GetHashCode(), out var node);
 
@@ -112,7 +113,7 @@ namespace Grate.Inventory
             }
             else
             {
-                var newNode = new InventoryItemNode(item, this, item.MainPos);
+                var newNode = new InventoryItemNode(item, this, item.GridPos);
                 _items.Add(item.GetHashCode(), newNode);
                 AddChild(newNode);
                 return newNode;
