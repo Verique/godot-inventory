@@ -8,40 +8,61 @@ namespace Grate.Inventory
 
     public class InventoryService : Reference, IInventoryService
     {
-        private InventoryModel model;
+        private Grid _grid;
+        private InventoryModel _model;
 
-        public InventoryService(InventoryNode node, Button testButton)
+        public InventoryService(CanvasLayer canvasLayer)
         {
-            model = new InventoryModel(node.GridSize.ToVector2Int());
+            var testButton = canvasLayer.GetNode<Button>("Button");
+            var node = canvasLayer.GetNode<InventoryNode>("Inventory");
+
+            _grid = node.Grid;
+            _model = new InventoryModel(_grid.GridSize);
             testButton.Connect("button_up", this, nameof(Add));
 
-            model.ModelChanged += node.HandleModelChange;
-            node.ItemPut += OnItemPut;
-            node.ItemPicked += OnItemPicked;
+            _model.ItemAdded += node.CreateItemNode;
+            node.LeftMouseButtonUp += OnLeftMouseButtonUp;
         }
 
-        // TODO Move all non relevant to view thigs as size and conversion methods
+        private void OnLeftMouseButtonUp(Vector2 pos)
+        {
+            var gridPos = (_grid.HasPoint(pos)) ? _grid.LocalToGrid(pos) : null;
+
+            if (_model.PickedItem != null)
+            {
+                if (gridPos == null)
+                    _model.DeletePickedItem();
+                else
+                    OnItemPut(gridPos);
+            }
+            else
+            {
+                if (gridPos != null)
+                    OnItemPicked(gridPos);
+            }
+        }
+
         private void OnItemPut(Vector2Int pos)
         {
-            if (model.CanPut(pos)) model.Put(pos);
+            if (_model.CanPut(pos)) _model.Put(pos);
         }
 
         private void OnItemPicked(Vector2Int pos)
         {
-            if (model.CheckCoordinatesValid(pos) && model.HasItemAt(pos)) model.Pick(pos);
+            if (_model.CheckCoordinatesValid(pos) && _model.HasItemAt(pos)) _model.Pick(pos);
         }
 
         private void Add()
         {
             var item = new InventoryItem();
 
-            for (int x = 0; x < model.Size.x; x++)
-                for (int y = 0; y < model.Size.y; y++)
+            for (int x = 0; x < _model.Size.x; x++)
+                for (int y = 0; y < _model.Size.y; y++)
                 {
                     var newPos = new Vector2Int(x, y);
-                    if (model.CanPlace(item, newPos))
+                    if (_model.CanPlace(item, newPos))
                     {
-                        model.Add(item, newPos);
+                        _model.Add(item, newPos);
                         return;
                     }
                 }

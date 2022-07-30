@@ -24,7 +24,17 @@ namespace Grate.Inventory.Utils
                 vacantCells.UnionWith(GetNeighbours(place).Where(x => !layout.Contains(x)));
             }
 
-            return layout;
+            return NormalizeLayout(layout);
+        }
+
+        private static List<Vector2Int> NormalizeLayout(List<Vector2Int> layout){
+            var middle = layout.OrderBy(m => GetModuleAverageDiff(m, layout)).ThenBy(m => m.x + m.y).First();
+            
+            return layout.Select(cell => cell - middle).ToList();
+        }
+
+        private static double GetModuleAverageDiff(Vector2Int module, List<Vector2Int> layout){
+            return layout.Select(v2 => v2 - module).Select(v2 => Math.Abs(v2.x) + Math.Abs(v2.y)).Average();
         }
 
         private static Vector2Int[] GetNeighbours(Vector2Int start)

@@ -11,8 +11,7 @@ public class Game : Node2D
     {
         serviceLocator = Services.CreateLocator(locator => locator
             .WithOption(GetWorld2d())
-            .WithOption(GetNode<InventoryNode>("GUICanvas/Inventory"))
-            .WithOption(GetNode<Button>("GUICanvas/Button"))
+            .WithOption(GetNode<CanvasLayer>("GUICanvas"))
 
             .WithService<IPhysicsService, PhysicsService>()
             .WithService<IInventoryService, InventoryService>()

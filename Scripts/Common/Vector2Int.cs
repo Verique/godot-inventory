@@ -21,9 +21,10 @@ namespace Grate.Types
             this.y = y;
         }
 
-        public (int, int) Unpack()
+        public void Deconstruct(out int X, out int Y)
         {
-            return (x, y);
+            X = x;
+            Y = y;
         }
 
         public static Vector2Int operator *(Vector2Int vector, int operand){
