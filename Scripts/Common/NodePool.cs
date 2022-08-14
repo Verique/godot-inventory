@@ -20,6 +20,7 @@ namespace Grate.Pooling
             _pool = new LinkedList<T>();
             _packedScene = packedScene;
             _size = size;
+            _parent = owner;
 
             CreatePoolNode(owner);
             InitializePool();
@@ -37,8 +38,10 @@ namespace Grate.Pooling
             return node.Value;
         }
 
-        public void Despawn(T node)
+        public void Despawn(T? node)
         {
+            if (node is null) throw new ArgumentNullException();
+
             var nodeToDelete = _parent.GetNodeOrNull<T>(node.GetPath());
 
             if (nodeToDelete != null) _parent.RemoveChild(node);
@@ -62,7 +65,7 @@ namespace Grate.Pooling
         {
             for (int i = 0; i < _size; i++)
             {
-                var node = _packedScene.Instance() as T;
+                var node = _packedScene.Instance<T>();
                 node.MarkToDespawn += n => Despawn(n as T);
                 _pool.AddLast(node);
             }

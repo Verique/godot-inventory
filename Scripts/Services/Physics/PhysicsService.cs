@@ -25,8 +25,8 @@ namespace Grate.Services.Physics
             List<CollisionObject2D> hitObjs = new List<CollisionObject2D>();
             foreach (var obj in godotArr)
             {
-                var dict = obj as Godot.Collections.Dictionary;
-                var item = dict["collider"] as CollisionObject2D;
+                var dict = (obj as Godot.Collections.Dictionary)!;
+                var item = (dict["collider"] as CollisionObject2D)!;
                 hitObjs.Add(item);
                 GD.Print($"{item.ZIndex} - {item.GetIndex()}");
             }

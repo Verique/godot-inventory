@@ -9,38 +9,39 @@ namespace Grate.Inventory
 {
     public interface IInventoryItem
     {
-        event Action<Vector2Int> ItemPicked;
-        event Action<Vector2Int> ItemPut;
-        event Action ItemDeleting;
+        event Action<Vector2Int>? ItemPicked;
+        event Action<Vector2Int>? ItemPut;
+        event Action? ItemDeleting;
 
         int Id { get; }
         IReadOnlyCollection<InventoryModule> Layout { get; }
         Color Color { get; }
         Vector2Int GridPos { get; }
-        Vector2Int PickOffset { get; }
+        Vector2Int? PickOffset { get; }
         bool IsPicked { get; }
     }
 
     public class InventoryItem : Reference, IInventoryItem
     {
-        public event Action<Vector2Int> ItemPicked;
-        public event Action<Vector2Int> ItemPut;
-        public event Action ItemDeleting;
+        public event Action<Vector2Int>? ItemPicked;
+        public event Action<Vector2Int>? ItemPut;
+        public event Action? ItemDeleting;
 
         public int Id => GetHashCode();
         public IReadOnlyCollection<InventoryModule> Layout { get; }
         public Color Color { get; private set; }
         public Vector2Int GridPos { get; private set; }
-        public Vector2Int PickOffset { get; private set; }
+        public Vector2Int? PickOffset { get; private set; }
         public bool IsPicked => PickOffset != null;
 
-        public InventoryItem()
+        public InventoryItem(Vector2Int gridPos)
         {
             var rng = new RandomNumberGenerator();
             rng.Randomize();
             Color = Color.Color8((byte)rng.RandiRange(0, 255), (byte)rng.RandiRange(0, 255), (byte)rng.RandiRange(0, 255));
 
             Layout = InventoryUtils.GenerateItemLayout(rng.RandiRange(2, 5));
+            GridPos = gridPos;
         }
 
         public IReadOnlyCollection<Vector2Int> GetModuleCoordinates()
@@ -56,6 +57,8 @@ namespace Grate.Inventory
 
         public void Put(Vector2Int putPos)
         {
+            if (PickOffset is null) throw new Exception($"Item {Id} is not picked");
+
             GridPos = putPos + PickOffset;
             PickOffset = null;
             ItemPut?.Invoke(GridPos);

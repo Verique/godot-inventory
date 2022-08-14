@@ -12,7 +12,7 @@ namespace Grate.Services
             IServiceLocatorBuilder WithService<TInterface, TImplementation>()
                 where TImplementation : class, TInterface
                 where TInterface : class, IService;
-            IServiceLocatorBuilder WithOption<T>(T option);
+            IServiceLocatorBuilder WithOption<T>(T option) where T: notnull; 
         }
 
         private class ServiceLocatorBuilder : IServiceLocatorBuilder
@@ -28,7 +28,7 @@ namespace Grate.Services
                 where TImplementation : class, TInterface =>
                 AddTo(types, typeof(TInterface), typeof(TImplementation));
 
-            public IServiceLocatorBuilder WithOption<T>(T option) =>
+            public IServiceLocatorBuilder WithOption<T>(T option) where T: notnull =>
                 AddTo(options, typeof(T), option);
 
             public ServiceLocator Build()
@@ -80,7 +80,7 @@ namespace Grate.Services
                     .Select(paramInfo => GetParameterByKey(paramInfo.ParameterType))
                     .ToArray();
 
-                return constructor.Invoke(cParams.ToArray()) as T;
+                return (constructor.Invoke(cParams.ToArray()) as T)!;
             }
 
             private bool IsService(Type type) =>
@@ -125,7 +125,7 @@ namespace Grate.Services
                 var serviceOrOption = key is IService ? "Service" : "Option";
                 if (!dict.TryGetValue(key, out var dependency))
                     throw new InvalidOperationException($"{serviceOrOption} {key.Name} is not registered.");
-                return dependency;
+                return dependency!; 
             }
         }
     }

@@ -5,7 +5,7 @@ using Grate.Inventory;
 
 public class Game : Node2D
 {
-    private IServiceLocator serviceLocator;
+    private IServiceLocator? serviceLocator;
 
     public override void _EnterTree()
     {

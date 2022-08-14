@@ -54,7 +54,7 @@ namespace Grate.Inventory
 
         private void Add()
         {
-            var item = new InventoryItem();
+            var item = new InventoryItem(Vector2Int.Zero);
 
             for (int x = 0; x < _model.Size.x; x++)
                 for (int y = 0; y < _model.Size.y; y++)

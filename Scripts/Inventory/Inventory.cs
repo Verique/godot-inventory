@@ -8,10 +8,10 @@ namespace Grate.Inventory
 {
     public class InventoryModel : Reference
     {
-        public event Action<IInventoryItem> ItemAdded;
+        public event Action<IInventoryItem>? ItemAdded;
 
         public readonly Vector2Int Size;
-        public InventoryItem PickedItem { get; private set; }
+        public InventoryItem? PickedItem { get; private set; }
 
         private Dictionary<Vector2Int, InventoryItem> _itemsByPosition = new Dictionary<Vector2Int, InventoryItem>();
         private List<InventoryItem> Items => _itemsByPosition.Select(x => x.Value).Distinct().ToList();
@@ -49,7 +49,7 @@ namespace Grate.Inventory
             PickedItem = null;
         }
 
-        private InventoryItem PickItem(InventoryItem item, Vector2Int coord = null)
+        private InventoryItem PickItem(InventoryItem item, Vector2Int? coord = null)
         {
             foreach (var moduleCoord in item.GetModuleCoordinates())
             {
@@ -63,6 +63,8 @@ namespace Grate.Inventory
 
         private void PutItem(Vector2Int coord)
         {
+            if (PickedItem is null) throw new Exception("Nothing's picked");
+
             PickedItem.Put(coord);
             foreach (var moduleCoord in PickedItem.GetModuleCoordinates())
             {
@@ -73,7 +75,7 @@ namespace Grate.Inventory
 
         public void Put(Vector2Int putPos)
         {
-            if (PickedItem == null) throw new Exception("Nothing's picked");
+            if (PickedItem?.PickOffset is null) throw new Exception("Nothing's picked");
 
             var itemsAtPutPos = ItemsAt(PickedItem.Layout.Select(x => putPos + PickedItem.PickOffset + x.LayoutPos).ToList());
             if ((itemsAtPutPos.Count() > 1)
@@ -117,7 +119,7 @@ namespace Grate.Inventory
             return !(x >= Size.x || x < 0 || y >= Size.y || y < 0);
         }
 
-        public bool CanPut(Vector2Int putPos) => CanPlace(PickedItem, putPos + PickedItem.PickOffset, true);
+        public bool CanPut(Vector2Int putPos) => (PickedItem?.PickOffset is null) ? false : CanPlace(PickedItem, putPos + PickedItem.PickOffset, true);
         public bool HasItemAt(Vector2Int pos) => _itemsByPosition.ContainsKey(pos);
     };
 }

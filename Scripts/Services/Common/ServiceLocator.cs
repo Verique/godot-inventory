@@ -33,7 +33,7 @@ namespace Grate.Services
                 var type = typeof(TInterface);
                 var success = _services.TryGetValue(type, out var service);
                 if (!success) throw new InvalidOperationException($"Service {type.Name} isn't registered");
-                return service as TInterface;
+                return (service as TInterface)!;
             }
         }
     }

@@ -10,7 +10,7 @@ namespace Grate.Inventory
         [Export] public Vector2 GridSize = new Vector2(10, 5);
         [Export] public int CellSize = 80;
 
-        public event Action<Vector2> LeftMouseButtonUp;
+        public event Action<Vector2>? LeftMouseButtonUp;
 
         public Grid Grid { get; private set; }
 
