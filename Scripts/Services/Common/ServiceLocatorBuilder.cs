@@ -83,7 +83,7 @@ namespace Grate.Services
                 return constructor.Invoke(cParams.ToArray()) as T;
             }
 
-            private bool IsService(Type type) => 
+            private bool IsService(Type type) =>
                 type.GetInterface("IService") != null;
 
             private List<Type> GetDependencies<T>() where T : class
@@ -112,7 +112,8 @@ namespace Grate.Services
                 return this;
             }
 
-            private object GetParameterByKey(Type key){
+            private object GetParameterByKey(Type key)
+            {
                 if (IsService(key))
                     return GetParameterByKeyFrom(services, key);
                 else

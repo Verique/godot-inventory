@@ -14,7 +14,7 @@ namespace Grate.Inventory
         event Action ItemDeleting;
 
         int Id { get; }
-        IReadOnlyCollection<Vector2Int> Layout { get; }
+        IReadOnlyCollection<InventoryModule> Layout { get; }
         Color Color { get; }
         Vector2Int GridPos { get; }
         Vector2Int PickOffset { get; }
@@ -28,7 +28,7 @@ namespace Grate.Inventory
         public event Action ItemDeleting;
 
         public int Id => GetHashCode();
-        public IReadOnlyCollection<Vector2Int> Layout { get; }
+        public IReadOnlyCollection<InventoryModule> Layout { get; }
         public Color Color { get; private set; }
         public Vector2Int GridPos { get; private set; }
         public Vector2Int PickOffset { get; private set; }
@@ -40,12 +40,12 @@ namespace Grate.Inventory
             rng.Randomize();
             Color = Color.Color8((byte)rng.RandiRange(0, 255), (byte)rng.RandiRange(0, 255), (byte)rng.RandiRange(0, 255));
 
-            Layout = InventoryUtils.GenerateLayout(rng.RandiRange(2, 5));
+            Layout = InventoryUtils.GenerateItemLayout(rng.RandiRange(2, 5));
         }
 
         public IReadOnlyCollection<Vector2Int> GetModuleCoordinates()
         {
-            return Layout.Select(x => x + GridPos).ToList();
+            return Layout.Select(x => x.LayoutPos + GridPos).ToList();
         }
 
         public void Pick(Vector2Int pickPos)
@@ -69,6 +69,25 @@ namespace Grate.Inventory
         public void MoveTo(Vector2Int newPos)
         {
             GridPos = newPos;
+        }
+    }
+
+    public class InventoryModule
+    {
+        public Vector2Int LayoutPos { get; private set; }
+        public bool Right { get; private set; }
+        public bool Left { get; private set; }
+        public bool Up { get; private set; }
+        public bool Down { get; private set; }
+
+        public InventoryModule(Vector2Int pos, IEnumerable<Vector2Int> freeNeighbourCells)
+        {
+            LayoutPos = pos;
+            // ups and downs are shuffled since inventory is top to bottom
+            if (freeNeighbourCells.Contains(Vector2Int.Up + LayoutPos)) Down = true;
+            if (freeNeighbourCells.Contains(Vector2Int.Down + LayoutPos)) Up = true;
+            if (freeNeighbourCells.Contains(Vector2Int.Left + LayoutPos)) Left = true;
+            if (freeNeighbourCells.Contains(Vector2Int.Right + LayoutPos)) Right = true;
         }
     }
 }

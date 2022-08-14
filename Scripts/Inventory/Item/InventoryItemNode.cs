@@ -7,12 +7,27 @@ namespace Grate.Inventory
 {
     public class InventoryItemModuleNode : TextureRect
     {
-        public InventoryItemModuleNode(Color color, Vector2 position)
+        List<Vector2> DrawPoses = new List<Vector2>();
+
+        public InventoryItemModuleNode(Color color, Vector2 position, InventoryModule module)
         {
             RectPosition = position;
             this.Texture = ResourceLoader.Load<StreamTexture>("res://sprites/item1x1.png");
             this.Modulate = color;
-            this.MouseFilter = MouseFilterEnum.Ignore;
+            this.MouseFilter = MouseFilterEnum.Pass;
+            if (module.Down) DrawPoses.Add(new Vector2(40, 80));
+            if (module.Up) DrawPoses.Add(new Vector2(40, 0));
+            if (module.Left) DrawPoses.Add(new Vector2(0, 40));
+            if (module.Right) DrawPoses.Add(new Vector2(80, 40));
+            Update();
+        }
+
+        public override void _Draw()
+        {
+            foreach (var point in DrawPoses)
+            {
+                DrawCircle(point, 10, Colors.Plum);
+            }
         }
     }
 
@@ -36,10 +51,10 @@ namespace Grate.Inventory
 
             foreach (var point in item.Layout)
             {
-                var pos = (point) * grid.CellSize;
-                var module = new InventoryItemModuleNode(item.Color, pos.ToVector2());
+                var pos = (point.LayoutPos) * grid.CellSize;
+                var module = new InventoryItemModuleNode(item.Color, pos.ToVector2(), point);
                 this.AddChild(module);
-                _modulesByLayout.Add(point, module);
+                _modulesByLayout.Add(point.LayoutPos, module);
             }
         }
 

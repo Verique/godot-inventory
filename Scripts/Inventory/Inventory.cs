@@ -14,6 +14,7 @@ namespace Grate.Inventory
         public InventoryItem PickedItem { get; private set; }
 
         private Dictionary<Vector2Int, InventoryItem> _itemsByPosition = new Dictionary<Vector2Int, InventoryItem>();
+        private List<InventoryItem> Items => _itemsByPosition.Select(x => x.Value).Distinct().ToList();
 
         public InventoryModel(Vector2Int size)
         {
@@ -74,7 +75,7 @@ namespace Grate.Inventory
         {
             if (PickedItem == null) throw new Exception("Nothing's picked");
 
-            var itemsAtPutPos = ItemsAt(PickedItem.Layout.Select(x => putPos + PickedItem.PickOffset + x).ToList());
+            var itemsAtPutPos = ItemsAt(PickedItem.Layout.Select(x => putPos + PickedItem.PickOffset + x.LayoutPos).ToList());
             if ((itemsAtPutPos.Count() > 1)
                     || (!CanPlace(PickedItem, putPos + PickedItem.PickOffset, itemsAtPutPos.Any()))) return;
 
@@ -93,7 +94,7 @@ namespace Grate.Inventory
         //TODO list of highlighted cells with color
         public bool CanPlace(InventoryItem item, Vector2Int placePos, bool replace = false)
         {
-            foreach (var layoutItem in item.Layout)
+            foreach (var layoutItem in item.Layout.Select(x => x.LayoutPos))
             {
                 var cell = layoutItem + placePos;
 

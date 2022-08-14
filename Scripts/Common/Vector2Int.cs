@@ -27,22 +27,29 @@ namespace Grate.Types
             Y = y;
         }
 
-        public static Vector2Int operator *(Vector2Int vector, int operand){
+        public static Vector2Int operator *(Vector2Int vector, int operand)
+        {
             return new Vector2Int(vector.x * operand, vector.y * operand);
         }
 
-        public static Vector2Int operator +(Vector2Int v1, Vector2Int v2){
+        public static Vector2Int operator +(Vector2Int v1, Vector2Int v2)
+        {
             return new Vector2Int(v1.x + v2.x, v1.y + v2.y);
         }
 
-        public static Vector2Int operator -(Vector2Int v1, Vector2Int v2){
+        public static Vector2Int operator -(Vector2Int v1, Vector2Int v2)
+        {
             return new Vector2Int(v1.x - v2.x, v1.y - v2.y);
         }
 
         public Vector2 ToVector2() => new Vector2(x, y);
 
-        public static Vector2Int Zero => new Vector2Int(0,0);
-        public static Vector2Int One => new Vector2Int(1,1);
+        public static Vector2Int Zero => new Vector2Int(0, 0);
+        public static Vector2Int One => new Vector2Int(1, 1);
+        public static Vector2Int Left => new Vector2Int(-1, 0);
+        public static Vector2Int Right => new Vector2Int(1, 0);
+        public static Vector2Int Up => new Vector2Int(0, 1);
+        public static Vector2Int Down => new Vector2Int(0, -1);
 
         public override string ToString()
         {
