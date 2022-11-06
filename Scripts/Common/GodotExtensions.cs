@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Grate.Utils
 {
@@ -14,6 +15,13 @@ namespace Grate.Utils
             }
 
             return result;
+        }
+
+        public static IEnumerable<T> FilterOutNulls<T>(this IEnumerable<T?> that) where T: class
+        {
+            return that
+                .Where(x => x != null)
+                .Select(x => x!);
         }
     }
 }

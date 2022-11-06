@@ -1,8 +1,7 @@
 using System;
 using Godot;
-using Grate.Types;
 
-namespace Grate.Inventory
+namespace Grate.Types
 {
     public class Grid : Reference
     {

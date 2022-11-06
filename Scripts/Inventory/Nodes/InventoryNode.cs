@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Godot;
 using Grate.Input;
 using Grate.Types;
@@ -10,15 +11,27 @@ namespace Grate.Inventory
         [Export] public Vector2 GridSize = new Vector2(10, 5);
         [Export] public int CellSize = 80;
 
-        public event Action<Vector2>? LeftMouseButtonUp;
+        public event Action<Vector2Int?, Vector2Int>? LeftMouseButtonUp;
 
-        public Grid Grid { get; private set; }
+        private Grid Grid { get; set; }
 
         private Vector2? _cursorPos;
+        private Vector2Int _pickOffset;
+        private Dictionary<int, InventoryItemNode> _itemViewById;
 
         public InventoryNode()
         {
             Grid = new Grid(GridSize.ToVector2Int(), CellSize);
+            _itemViewById = new Dictionary<int, InventoryItemNode>();
+            _pickOffset = Vector2Int.Zero;
+        }
+
+        public void Initialize(IInventoryService service)
+        {
+            service.ItemAdded += CreateItemNode;
+            service.ItemDeleted += DeleteItemNode;
+            service.ItemPicked += PickItem;
+            service.ItemPut += PutItem;
         }
 
         public override void _Ready()
@@ -55,16 +68,48 @@ namespace Grate.Inventory
                     return;
                 case InputEventMouseButton mb:
                     if (mb.IsLeftMouseUp())
-                        LeftMouseButtonUp?.Invoke(mb.Position);
+                    {
+                        var gridPos = (Grid.HasPoint(mb.Position)) ? Grid.LocalToGrid(mb.Position) : null;
+                        LeftMouseButtonUp?.Invoke(gridPos, _pickOffset);
+                    }
                     break;
                 default:
                     return;
             }
         }
 
-        public void CreateItemNode(IInventoryItem item)
+        private void CreateItemNode(IInventoryItem item)
         {
-            AddChild(new InventoryItemNode(item, Grid));
+            var node = new InventoryItemNode(item, Grid);
+            AddChild(node);
+            _itemViewById.Add(item.Id, node);
+        }
+
+        private void DeleteItemNode(int id)
+        {
+            var item = GetItemNodeById(id);
+            item.QueueFree();
+            _itemViewById.Remove(id);
+        }
+
+        private void PutItem(int id, Vector2Int gridPos)
+        {
+            var item = GetItemNodeById(id);
+            item.Put(gridPos);
+            _pickOffset = Vector2Int.Zero;
+        }
+
+        private void PickItem(int id, Vector2Int pickOffset)
+        {
+            var item = GetItemNodeById(id);
+            item.Pick(pickOffset);
+            _pickOffset = pickOffset;
+        }
+
+        private InventoryItemNode GetItemNodeById(int id)
+        {
+            if (!_itemViewById.ContainsKey(id)) throw new Exception($"No item with id {id}");
+            return _itemViewById[id];
         }
     }
 }
