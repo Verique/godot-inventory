@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/grid-cell-export.png-5f2e79e29085ab8c27630200a164a349.stex"
+path="res://.import/grid-cell-export.png-f66785135a97c934f66cd5f909530eb8.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprites/grid-cell-export.png"
-dest_files=[ "res://.import/grid-cell-export.png-5f2e79e29085ab8c27630200a164a349.stex" ]
+source_file="res://Sprites/grid-cell-export.png"
+dest_files=[ "res://.import/grid-cell-export.png-f66785135a97c934f66cd5f909530eb8.stex" ]
 
 [params]
 

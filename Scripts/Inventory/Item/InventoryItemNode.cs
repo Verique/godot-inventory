@@ -13,7 +13,7 @@ namespace Grate.Inventory
         {
             RectPosition = position;
             this.Texture = ResourceLoader.Load<StreamTexture>("res://sprites/item1x1.png");
-            this.Modulate = color;
+            this.SelfModulate = color;
             this.MouseFilter = MouseFilterEnum.Pass;
             if (module.Down) DrawPoses.Add(new Vector2(40, 80));
             if (module.Up) DrawPoses.Add(new Vector2(40, 0));
@@ -26,7 +26,7 @@ namespace Grate.Inventory
         {
             foreach (var point in DrawPoses)
             {
-                DrawCircle(point, 10, Colors.Plum);
+                DrawCircle(point, 10, Colors.White);
             }
         }
     }
