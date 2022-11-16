@@ -21,6 +21,8 @@ namespace Grate.Types
             this.y = y;
         }
 
+        public int SqrMagnitude => x ^ 2 + y ^ 2;
+
         public void Deconstruct(out int X, out int Y)
         {
             X = x;

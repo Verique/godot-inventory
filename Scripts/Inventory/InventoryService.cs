@@ -76,30 +76,20 @@ namespace Grate.Inventory
                     if (_inventory.CanPlace(item, newPos))
                     {
                         _inventory.Add(item, newPos);
-                        foreach (var (module, offset) in item.Layout){
-                            GD.Print($"Service coords {item.Position! + offset}");
-                        }
                         ItemAdded?.Invoke(item);
                         return;
                     }
                 }
         }
 
-        public void Pick(Vector2Int coord)
+        private void Pick(Vector2Int coord)
         {
             if (_inventory[coord] is null) throw new Exception($"Nothing in {coord}");
 
             _pickedItem = _inventory.DeleteByCoord(coord);
         }
 
-        public void DeletePickedItem()
-        {
-            if (_pickedItem == null) return;
-            //PickedItem.InvokeItemDeletion();
-            _pickedItem = null;
-        }
-
-        public void Put(Vector2Int putPos)
+        private void Put(Vector2Int putPos)
         {
             if (_pickedItem is null) throw new Exception("Nothing's picked");
             if (_pickedItem.Position != null) throw new Exception("Picked item isn't picked");
