@@ -7,39 +7,29 @@ using Grate.Utils;
 
 namespace Grate.Inventory
 {
-    public interface IInventoryService : IService
-    {
-        event Action<IInventoryItem>? ItemAdded;
-        event Action<int, Vector2Int>? ItemPicked;
-        event Action<int, Vector2Int>? ItemPut;
-        event Action<int>? ItemDeleted;
-    }
+    public interface IInventoryService : IService { }
 
     public class InventoryService : Reference, IInventoryService
     {
-        public event Action<IInventoryItem>? ItemAdded;
-        public event Action<int>? ItemDeleted;
-        public event Action<int, Vector2Int>? ItemPicked;
-        public event Action<int, Vector2Int>? ItemPut;
-
         public InventoryItem? _pickedItem { get; private set; }
         private Inventory _inventory;
+        private InventoryNode _inventoryNode;
         private Vector2Int _gridSize;
+        private Vector2Int _pickOffset = Vector2Int.Zero;
 
         public InventoryService(CanvasLayer canvasLayer)
         {
             var testButton = canvasLayer.GetNode<Button>("Button");
-            var node = canvasLayer.GetNode<InventoryNode>("Inventory");
+            _inventoryNode = canvasLayer.GetNode<InventoryNode>("Inventory");
 
-            _gridSize = node.GridSize.ToVector2Int();
+            _gridSize = _inventoryNode.GridSize.ToVector2Int();
             _inventory = new Inventory(_gridSize);
 
             testButton.Connect("button_up", this, nameof(Add));
-            node.LeftMouseButtonUp += OnLeftMouseButtonUp;
-            node.Initialize(this);
+            _inventoryNode.LeftMouseButtonUp += OnLeftMouseButtonUp;
         }
 
-        private void OnLeftMouseButtonUp(Vector2Int? gridPos, Vector2Int offset)
+        private void OnLeftMouseButtonUp(Vector2Int? gridPos)
         {
             var item = gridPos != null ? _inventory.ItemAt(gridPos) : null;
             var itemPos = item != null ? item.Position : null;
@@ -47,12 +37,12 @@ namespace Grate.Inventory
             if (_pickedItem != null)
             {
                 if (gridPos == null) {
-                    ItemDeleted?.Invoke(_pickedItem.Id);
+                    _inventoryNode.DeleteItem(_pickedItem.Id);
                     _pickedItem = null;
                 }
                 else
                 {
-                    Put(gridPos - offset);
+                    Put(gridPos - _pickOffset);
                 }
             }
             else
@@ -60,7 +50,8 @@ namespace Grate.Inventory
                 if (itemPos != null)
                 {
                     Pick(itemPos);
-                    ItemPicked?.Invoke(item!.Id, gridPos! - itemPos);
+                    _pickOffset = gridPos! - itemPos;
+                    _inventoryNode.PickItem(item!.Id, _pickOffset);
                 }
             }
         }
@@ -76,7 +67,7 @@ namespace Grate.Inventory
                     if (_inventory.CanPlace(item, newPos))
                     {
                         _inventory.Add(item, newPos);
-                        ItemAdded?.Invoke(item);
+                        _inventoryNode.CreateItem(item);
                         return;
                     }
                 }
@@ -111,14 +102,15 @@ namespace Grate.Inventory
                 _inventory.Delete(nextItem);
                 _inventory.Add(_pickedItem, putPos);
                 _pickedItem = nextItem;
-                ItemPicked?.Invoke(_pickedItem.Id, Vector2Int.Zero);
+                _inventoryNode.PickItem(_pickedItem.Id, Vector2Int.Zero);
+                _pickOffset = Vector2Int.Zero;
             }
             else
             {
                 _inventory.Add(_pickedItem, putPos);
                 _pickedItem = null;
             }
-            ItemPut?.Invoke(id, putPos);
+            _inventoryNode.PutItem(id, putPos);
         }
     }
 }

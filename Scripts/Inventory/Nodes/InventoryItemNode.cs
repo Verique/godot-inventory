@@ -46,6 +46,7 @@ namespace Grate.Inventory
 
         public void Pick(Vector2Int pickOffset)
         {
+            // TODO: REMOVE _GRID & OTHER THINGS, MAKE NODES STUPID
             _pickOffset = _grid.CellSize * (pickOffset.ToVector2() + Vector2.One / 2);
 
             this.Modulate = Color.ColorN("white", 0.2f);
