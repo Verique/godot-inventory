@@ -11,11 +11,10 @@ namespace Grate.Inventory
 
     public class InventoryService : Reference, IInventoryService
     {
-        public InventoryItem? _pickedItem { get; private set; }
+        private (InventoryItem Item, Vector2Int Offset)? _pickedItem { get; set; }
         private Inventory _inventory;
         private InventoryNode _inventoryNode;
         private Vector2Int _gridSize;
-        private Vector2Int _pickOffset = Vector2Int.Zero;
 
         public InventoryService(CanvasLayer canvasLayer)
         {
@@ -27,31 +26,41 @@ namespace Grate.Inventory
 
             testButton.Connect("button_up", this, nameof(Add));
             _inventoryNode.LeftMouseButtonUp += OnLeftMouseButtonUp;
+            _inventoryNode.MouseMoved += OnMouseMoved;
+        }
+
+        private void OnMouseMoved(Vector2 mousePos)
+        {
+            if (_pickedItem != null) {
+                var (item, offset) = _pickedItem.Value;
+                var pickOffset = (offset.ToVector2() + (Vector2.One / 2)) * _inventoryNode.Grid.CellSize;
+                _inventoryNode.MoveItem(item.Id, mousePos - pickOffset);
+            }
         }
 
         private void OnLeftMouseButtonUp(Vector2Int? gridPos)
         {
-            var item = gridPos != null ? _inventory.ItemAt(gridPos) : null;
-            var itemPos = item != null ? item.Position : null;
-
             if (_pickedItem != null)
             {
-                if (gridPos == null) {
-                    _inventoryNode.DeleteItem(_pickedItem.Id);
+                var (item, offset) = _pickedItem.Value;
+                if (gridPos == null)
+                {
+                    _inventoryNode.DeleteItem(item.Id);
                     _pickedItem = null;
                 }
                 else
                 {
-                    Put(gridPos - _pickOffset);
+                    Put(gridPos - offset);
                 }
             }
             else
             {
+                var item = gridPos != null ? _inventory.ItemAt(gridPos) : null;
+                var itemPos = item != null ? item.Position : null;
                 if (itemPos != null)
                 {
-                    Pick(itemPos);
-                    _pickOffset = gridPos! - itemPos;
-                    _inventoryNode.PickItem(item!.Id, _pickOffset);
+                    _pickedItem = (Pick(itemPos), gridPos! - itemPos);
+                    _inventoryNode.PickItem(item!.Id);
                 }
             }
         }
@@ -73,22 +82,23 @@ namespace Grate.Inventory
                 }
         }
 
-        private void Pick(Vector2Int coord)
+        private InventoryItem Pick(Vector2Int coord)
         {
             if (_inventory[coord] is null) throw new Exception($"Nothing in {coord}");
 
-            _pickedItem = _inventory.DeleteByCoord(coord);
+            return _inventory.DeleteByCoord(coord);
         }
 
         private void Put(Vector2Int putPos)
         {
             if (_pickedItem is null) throw new Exception("Nothing's picked");
-            if (_pickedItem.Position != null) throw new Exception("Picked item isn't picked");
-            var id = _pickedItem.Id;
+            var pickedItem = _pickedItem.Value.Item;
+            if (pickedItem.Position != null) throw new Exception("Picked item isn't picked");
+            var id = pickedItem.Id;
 
-            if (!_inventory.CanPlace(_pickedItem, putPos, true)) return;
+            if (!_inventory.CanPlace(pickedItem, putPos, true)) return;
 
-            var itemsAtPutPos = _pickedItem.Layout
+            var itemsAtPutPos = pickedItem.Layout
                 .Select(x => _inventory[putPos + x.offset]?.Item)
                 .FilterOutNulls()
                 .Distinct();
@@ -100,14 +110,13 @@ namespace Grate.Inventory
             {
                 var nextItem = itemsAtPutPos.First();
                 _inventory.Delete(nextItem);
-                _inventory.Add(_pickedItem, putPos);
-                _pickedItem = nextItem;
-                _inventoryNode.PickItem(_pickedItem.Id, Vector2Int.Zero);
-                _pickOffset = Vector2Int.Zero;
+                _inventory.Add(pickedItem, putPos);
+                _inventoryNode.PickItem(nextItem.Id);
+                _pickedItem = (nextItem, Vector2Int.Zero);
             }
             else
             {
-                _inventory.Add(_pickedItem, putPos);
+                _inventory.Add(pickedItem, putPos);
                 _pickedItem = null;
             }
             _inventoryNode.PutItem(id, putPos);

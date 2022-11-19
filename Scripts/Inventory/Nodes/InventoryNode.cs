@@ -14,7 +14,7 @@ namespace Grate.Inventory
         public event Action<Vector2Int?>? LeftMouseButtonUp;
         public event Action<Vector2>? MouseMoved;
 
-        private Grid Grid { get; set; }
+        public Grid Grid { get; private set; }
 
         private Vector2? _cursorPos;
         private Dictionary<int, InventoryItemNode> _itemViewById;
@@ -23,11 +23,6 @@ namespace Grate.Inventory
         {
             Grid = new Grid(GridSize.ToVector2Int(), CellSize);
             _itemViewById = new Dictionary<int, InventoryItemNode>();
-        }
-
-        public override void _Ready()
-        {
-            MouseFilter = MouseFilterEnum.Ignore;
         }
 
         public override void _Draw()
@@ -47,12 +42,13 @@ namespace Grate.Inventory
 
         public override void _Input(InputEvent @event)
         {
-            var _e = MakeInputLocal(@event);
-            switch (_e)
+            var e = MakeInputLocal(@event);
+            switch (e)
             {
-                case InputEventMouseMotion e:
-                    if (Grid.HasPoint(e.Position))
-                        _cursorPos = Grid.CenterPointOfCell(Grid.LocalToGrid(e.Position));
+                case InputEventMouseMotion mm:
+                    MouseMoved?.Invoke(mm.Position);
+                    if (Grid.HasPoint(mm.Position))
+                        _cursorPos = Grid.CenterPointOfCell(Grid.LocalToGrid(mm.Position));
                     else
                         _cursorPos = null;
                     Update();
@@ -85,14 +81,17 @@ namespace Grate.Inventory
 
         public void PutItem(int id, Vector2Int gridPos)
         {
-            var item = GetItemNodeById(id);
-            item.Put(gridPos);
+            GetItemNodeById(id).Put(Grid.LeftTopPointOfCell(gridPos));
         }
 
-        public void PickItem(int id, Vector2Int pickOffset)
+        public void PickItem(int id)
         {
-            var item = GetItemNodeById(id);
-            item.Pick(pickOffset);
+            GetItemNodeById(id).Pick();
+        }
+
+        public void MoveItem(int id, Vector2 newPos)
+        {
+            GetItemNodeById(id).RectPosition = newPos;
         }
 
         private InventoryItemNode GetItemNodeById(int id)
