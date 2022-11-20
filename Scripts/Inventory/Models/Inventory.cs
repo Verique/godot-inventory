@@ -9,6 +9,7 @@ namespace Grate.Inventory
     public class Inventory : Reference
     {
         private InventoryModule?[,] _grid;
+        // TODO: Try to get rid of dict here
         private Dictionary<int, Vector2Int> _itemPosById;
         private Vector2Int _size;
 
