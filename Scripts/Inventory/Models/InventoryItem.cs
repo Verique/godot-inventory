@@ -26,6 +26,7 @@ namespace Grate.Inventory
         public bool IsPicked => Position != null;
 
         public IReadOnlyCollection<(InventoryModule module, Vector2Int offset)> Layout { get; set; } = new List<(InventoryModule, Vector2Int)>();
+        // Position is kinda strange since everyone can set it
         public Vector2Int? Position { get; set; }
 
         public InventoryItem()

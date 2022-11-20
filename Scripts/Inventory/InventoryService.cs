@@ -1,9 +1,7 @@
 using System;
-using System.Linq;
 using Godot;
 using Grate.Services;
 using Grate.Types;
-using Grate.Utils;
 
 namespace Grate.Inventory
 {
@@ -11,9 +9,10 @@ namespace Grate.Inventory
 
     public class InventoryService : Reference, IInventoryService
     {
-        private (InventoryItem Item, Vector2Int Offset)? _pickedItem { get; set; }
         private Inventory _inventory;
         private InventoryNode _inventoryNode;
+
+        private PickedItemInfo? _pickedItem { get; set; }
         private Vector2Int _gridSize;
 
         public InventoryService(CanvasLayer canvasLayer)
@@ -31,10 +30,9 @@ namespace Grate.Inventory
 
         private void OnMouseMoved(Vector2 mousePos)
         {
-            if (_pickedItem != null) {
-                var (item, offset) = _pickedItem.Value;
-                var pickOffset = (offset.ToVector2() + (Vector2.One / 2)) * _inventoryNode.Grid.CellSize;
-                _inventoryNode.MoveItem(item.Id, mousePos - pickOffset);
+            if (_pickedItem != null)
+            {
+                _inventoryNode.MoveItem(_pickedItem.Item.Id, mousePos - _pickedItem.PixelOffset);
             }
         }
 
@@ -42,27 +40,40 @@ namespace Grate.Inventory
         {
             if (_pickedItem != null)
             {
-                var (item, offset) = _pickedItem.Value;
                 if (gridPos == null)
-                {
-                    _inventoryNode.DeleteItem(item.Id);
-                    _pickedItem = null;
-                }
+                    DeletePickedItem(_pickedItem);
                 else
                 {
-                    Put(gridPos - offset);
+                    var putPos = gridPos - _pickedItem.GridOffset;
+
+                    if (!TryPutPickedItem(putPos, _pickedItem)) {
+                        ReplacePickedItem(putPos, _pickedItem);
+                    }
                 }
             }
-            else
-            {
-                var item = gridPos != null ? _inventory.ItemAt(gridPos) : null;
-                var itemPos = item != null ? item.Position : null;
-                if (itemPos != null)
-                {
-                    _pickedItem = (Pick(itemPos), gridPos! - itemPos);
-                    _inventoryNode.PickItem(item!.Id);
-                }
-            }
+            else if (gridPos != null)
+                PickItem(gridPos);
+        }
+
+        private void ReplacePickedItem(Vector2Int putPos, PickedItemInfo pickedItem)
+        {
+            var replacementItem = _inventory.TryReplace(pickedItem.Item, putPos);
+            if (replacementItem == null) return;
+
+            _inventoryNode.PutItem(pickedItem.Item.Id, putPos);
+            _inventoryNode.PickItem(replacementItem.Id);
+            _pickedItem = BuildPickedItem(replacementItem);
+        }
+
+        private bool TryPutPickedItem(Vector2Int putPos, PickedItemInfo pickedItem)
+        {
+            var result = _inventory.TryPlace(pickedItem.Item, putPos);
+            if (!result) return false;
+
+            _inventoryNode.PutItem(pickedItem.Item.Id, putPos);
+            _pickedItem = null;
+
+            return true;
         }
 
         private void Add()
@@ -72,54 +83,49 @@ namespace Grate.Inventory
             for (int x = 0; x < _gridSize.x; x++)
                 for (int y = 0; y < _gridSize.y; y++)
                 {
-                    var newPos = new Vector2Int(x, y);
-                    if (_inventory.CanPlace(item, newPos))
+                    if (_inventory.TryPlace(item, new Vector2Int(x, y)))
                     {
-                        _inventory.Add(item, newPos);
                         _inventoryNode.CreateItem(item);
                         return;
                     }
                 }
         }
 
-        private InventoryItem Pick(Vector2Int coord)
+        private void PickItem(Vector2Int gridPos)
         {
-            if (_inventory[coord] is null) throw new Exception($"Nothing in {coord}");
+            var result = _inventory.TryPopByPosition(gridPos);
 
-            return _inventory.DeleteByCoord(coord);
+            if (result == null) return;
+
+            var (item, lastPos) = result.Value;
+
+            _inventoryNode.PickItem(item.Id);
+            _pickedItem = BuildPickedItem(item, gridPos - lastPos);
         }
 
-        private void Put(Vector2Int putPos)
+        private void DeletePickedItem(PickedItemInfo pickedItem)
         {
-            if (_pickedItem is null) throw new Exception("Nothing's picked");
-            var pickedItem = _pickedItem.Value.Item;
-            if (pickedItem.Position != null) throw new Exception("Picked item isn't picked");
-            var id = pickedItem.Id;
+            _inventoryNode.DeleteItem(pickedItem.Item.Id);
+            _pickedItem = null;
+        }
 
-            if (!_inventory.CanPlace(pickedItem, putPos, true)) return;
+        private PickedItemInfo BuildPickedItem(InventoryItem item, Vector2Int? gridOffset = null) =>
+            new PickedItemInfo(item, gridOffset ?? Vector2Int.Zero, _inventoryNode.CellSize);
 
-            var itemsAtPutPos = pickedItem.Layout
-                .Select(x => _inventory[putPos + x.offset]?.Item)
-                .FilterOutNulls()
-                .Distinct();
+        private class PickedItemInfo
+        {
+            public InventoryItem Item { get; private set; }
+            public Vector2Int GridOffset { get; private set; }
+            public Vector2 PixelOffset { get; private set; }
 
-            // Cant replace more than 1 item
-            if (itemsAtPutPos.Count() > 1) return;
-
-            if (itemsAtPutPos.Any())
+            public PickedItemInfo(InventoryItem item, Vector2Int gridOffset, int cellSize)
             {
-                var nextItem = itemsAtPutPos.First();
-                _inventory.Delete(nextItem);
-                _inventory.Add(pickedItem, putPos);
-                _inventoryNode.PickItem(nextItem.Id);
-                _pickedItem = (nextItem, Vector2Int.Zero);
+                if (item.Position != null) throw new Exception("Item isn't picked. Its position is set.");
+                Item = item;
+                GridOffset = gridOffset;
+                PixelOffset = (gridOffset.ToVector2() + (Vector2.One / 2)) * cellSize;
             }
-            else
-            {
-                _inventory.Add(pickedItem, putPos);
-                _pickedItem = null;
-            }
-            _inventoryNode.PutItem(id, putPos);
         }
     }
 }
+

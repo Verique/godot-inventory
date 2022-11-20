@@ -1,7 +1,7 @@
-using System;
 using System.Linq;
 using Godot;
 using Grate.Types;
+using Grate.Utils;
 
 namespace Grate.Inventory
 {
@@ -16,7 +16,64 @@ namespace Grate.Inventory
             Grid = new InventoryModule[size.x, size.y];
         }
 
-        public void Add(InventoryItem item, Vector2Int pos)
+        public (InventoryItem Item, Vector2Int LastPos)? TryPopByPosition(Vector2Int pos) {
+            var item = TryGetItemAt(pos);
+            if (item == null) return null;
+
+            var lastPos = item.Position!;
+
+            if (!TryPop(item)) return null;
+            else return (item, lastPos);
+
+        }
+
+        public bool TryPlace(InventoryItem item, Vector2Int gridPos) {
+            if (!CanPlace(item, gridPos)) return false;
+
+            Add(item, gridPos);
+            return true;
+        }
+
+        public InventoryItem? TryReplace(InventoryItem item, Vector2Int gridPos) {
+            var replacementItem = TryGetReplacementItem(item, gridPos);
+            if (replacementItem == null) return null;
+
+            TryPop(replacementItem);
+            Add(item, gridPos);
+
+            return replacementItem;
+        }
+
+        private bool CanPlace(InventoryItem item, Vector2Int placePos) {
+            return item.Layout
+                .Select(x => x.offset + placePos)
+                .All(x => CheckCoordinatesValid(x) && this[x] == null);
+        }
+
+        private InventoryItem? TryGetReplacementItem(InventoryItem item, Vector2Int placePos) {
+            var modulePoses = item.Layout
+                .Select(x => x.offset + placePos);
+
+            if (!modulePoses.All(CheckCoordinatesValid)) return null;
+
+            var items = modulePoses
+                .Select(pos => this[pos]?.Item)
+                .FilterOutNulls()
+                .DistinctBy(item => item.Id);
+
+            return items.Count() == 1 ? items.First() : null;
+
+        }
+
+        private InventoryModule? this[Vector2Int v]
+        {
+            get => Grid[v.x, v.y];
+            set => Grid[v.x, v.y] = value;
+        }
+
+        private InventoryItem? TryGetItemAt(Vector2Int? v) => v != null && CheckCoordinatesValid(v) ? this[v]?.Item : null;
+
+        private void Add(InventoryItem item, Vector2Int pos)
         {
             foreach (var (module, cell) in item.Layout.Select(x => (x.module, x.offset + pos)))
             {
@@ -26,9 +83,9 @@ namespace Grate.Inventory
             item.Position = pos;
         }
 
-        public void Delete(InventoryItem item)
+        private bool TryPop(InventoryItem item)
         {
-            if (item.Position is null) throw new Exception($"Item not placed");
+            if (item.Position is null) return false;
 
             foreach (var (module, cell) in item.Layout.Select(x => (x.module, x.offset + item.Position)))
             {
@@ -36,34 +93,8 @@ namespace Grate.Inventory
             }
 
             item.Position = null;
+            return true;
         }
-
-        public InventoryItem DeleteByCoord(Vector2Int coords)
-        {
-            if (this[coords] is null) throw new Exception($"No items at {coords}");
-
-            var item = this[coords]!.Item;
-            Delete(item);
-            return item;
-        }
-
-        //TODO list of highlighted cells with color
-        public bool CanPlace(InventoryItem item, Vector2Int placePos, bool replace = false)
-        {
-            return item.Layout
-                .Select(x => x.offset + placePos)
-                .All(x =>
-                   CheckCoordinatesValid(x)
-                   && (replace || this[x] is null));
-        }
-
-        public InventoryModule? this[Vector2Int v]
-        {
-            get => Grid[v.x, v.y];
-            private set => Grid[v.x, v.y] = value;
-        }
-
-        public InventoryItem? ItemAt(Vector2Int v) => this[v]?.Item;
 
         private bool CheckCoordinatesValid(Vector2Int coords)
         {
