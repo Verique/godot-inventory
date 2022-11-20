@@ -7,24 +7,21 @@ namespace Grate.Inventory
 {
     public class Inventory : Reference
     {
-        public InventoryModule?[,] Grid { get; private set; }
+        private InventoryModule?[,] _grid;
         private Vector2Int _size;
 
         public Inventory(Vector2Int size)
         {
             _size = size;
-            Grid = new InventoryModule[size.x, size.y];
+            _grid = new InventoryModule[size.x, size.y];
         }
 
-        public (InventoryItem Item, Vector2Int LastPos)? TryPopByPosition(Vector2Int pos) {
-            var item = TryGetItemAt(pos);
-            if (item == null) return null;
-
-            var lastPos = item.Position!;
-
-            if (!TryPop(item)) return null;
-            else return (item, lastPos);
-
+        public ItemWithOffset? TryPopByPosition(Vector2Int pos) {
+            var itemWithPos = TryGetItemAt(pos);
+            if (itemWithPos == null) return null;
+            
+            if (TryPop(itemWithPos.Item) == null) return null;
+            else return itemWithPos;
         }
 
         public bool TryPlace(InventoryItem item, Vector2Int gridPos) {
@@ -34,14 +31,15 @@ namespace Grate.Inventory
             return true;
         }
 
-        public InventoryItem? TryReplace(InventoryItem item, Vector2Int gridPos) {
+        public ItemWithOffset? TryReplace(InventoryItem item, Vector2Int gridPos) {
             var replacementItem = TryGetReplacementItem(item, gridPos);
             if (replacementItem == null) return null;
 
-            TryPop(replacementItem);
+            if (TryPop(replacementItem) == null) return null;
+
             Add(item, gridPos);
 
-            return replacementItem;
+            return new ItemWithOffset(replacementItem, Vector2Int.Zero);
         }
 
         private bool CanPlace(InventoryItem item, Vector2Int placePos) {
@@ -62,16 +60,24 @@ namespace Grate.Inventory
                 .DistinctBy(item => item.Id);
 
             return items.Count() == 1 ? items.First() : null;
-
         }
 
         private InventoryModule? this[Vector2Int v]
         {
-            get => Grid[v.x, v.y];
-            set => Grid[v.x, v.y] = value;
+            get => _grid[v.x, v.y];
+            set => _grid[v.x, v.y] = value;
         }
 
-        private InventoryItem? TryGetItemAt(Vector2Int? v) => v != null && CheckCoordinatesValid(v) ? this[v]?.Item : null;
+        private ItemWithOffset? TryGetItemAt(Vector2Int? v) {
+            if (v == null) return null;
+            var item = CheckCoordinatesValid(v) ? this[v]?.Item : null;
+
+            if (item == null) return null;
+
+            var itemPos = item.Position!;
+
+            return new ItemWithOffset(item, v - itemPos);
+        } 
 
         private void Add(InventoryItem item, Vector2Int pos)
         {
@@ -83,23 +89,36 @@ namespace Grate.Inventory
             item.Position = pos;
         }
 
-        private bool TryPop(InventoryItem item)
+        private Vector2Int? TryPop(InventoryItem item)
         {
-            if (item.Position is null) return false;
+            if (item.Position is null) return null;
 
             foreach (var (module, cell) in item.Layout.Select(x => (x.module, x.offset + item.Position)))
             {
                 this[cell] = null;
             }
 
+            var lastPos = item.Position;
             item.Position = null;
-            return true;
+            return lastPos;
         }
 
         private bool CheckCoordinatesValid(Vector2Int coords)
         {
             var (x, y) = coords;
             return !(x >= _size.x || x < 0 || y >= _size.y || y < 0);
+        }
+    }
+
+    public class ItemWithOffset
+    {
+        public InventoryItem Item { get; private set; }
+        public Vector2Int GridOffset { get; private set; }
+
+        public ItemWithOffset(InventoryItem item, Vector2Int gridOffset)
+        {
+            Item = item;
+            GridOffset = gridOffset;
         }
     }
 }

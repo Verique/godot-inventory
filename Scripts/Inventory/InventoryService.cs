@@ -1,4 +1,3 @@
-using System;
 using Godot;
 using Grate.Services;
 using Grate.Types;
@@ -46,7 +45,8 @@ namespace Grate.Inventory
                 {
                     var putPos = gridPos - _pickedItem.GridOffset;
 
-                    if (!TryPutPickedItem(putPos, _pickedItem)) {
+                    if (!TryPutPickedItem(putPos, _pickedItem))
+                    {
                         ReplacePickedItem(putPos, _pickedItem);
                     }
                 }
@@ -61,8 +61,8 @@ namespace Grate.Inventory
             if (replacementItem == null) return;
 
             _inventoryNode.PutItem(pickedItem.Item.Id, putPos);
-            _inventoryNode.PickItem(replacementItem.Id);
-            _pickedItem = BuildPickedItem(replacementItem);
+            _inventoryNode.PickItem(replacementItem.Item.Id);
+            _pickedItem = new PickedItemInfo(replacementItem, _inventoryNode.CellSize);
         }
 
         private bool TryPutPickedItem(Vector2Int putPos, PickedItemInfo pickedItem)
@@ -93,14 +93,12 @@ namespace Grate.Inventory
 
         private void PickItem(Vector2Int gridPos)
         {
-            var result = _inventory.TryPopByPosition(gridPos);
+            var itemWithOffset = _inventory.TryPopByPosition(gridPos);
 
-            if (result == null) return;
+            if (itemWithOffset == null) return;
 
-            var (item, lastPos) = result.Value;
-
-            _inventoryNode.PickItem(item.Id);
-            _pickedItem = BuildPickedItem(item, gridPos - lastPos);
+            _inventoryNode.PickItem(itemWithOffset.Item.Id);
+            _pickedItem = new PickedItemInfo(itemWithOffset, _inventoryNode.CellSize);
         }
 
         private void DeletePickedItem(PickedItemInfo pickedItem)
@@ -109,21 +107,13 @@ namespace Grate.Inventory
             _pickedItem = null;
         }
 
-        private PickedItemInfo BuildPickedItem(InventoryItem item, Vector2Int? gridOffset = null) =>
-            new PickedItemInfo(item, gridOffset ?? Vector2Int.Zero, _inventoryNode.CellSize);
-
-        private class PickedItemInfo
+        private class PickedItemInfo : ItemWithOffset
         {
-            public InventoryItem Item { get; private set; }
-            public Vector2Int GridOffset { get; private set; }
             public Vector2 PixelOffset { get; private set; }
 
-            public PickedItemInfo(InventoryItem item, Vector2Int gridOffset, int cellSize)
+            public PickedItemInfo(ItemWithOffset itemWithOffset, int cellSize) : base(itemWithOffset.Item, itemWithOffset.GridOffset)
             {
-                if (item.Position != null) throw new Exception("Item isn't picked. Its position is set.");
-                Item = item;
-                GridOffset = gridOffset;
-                PixelOffset = (gridOffset.ToVector2() + (Vector2.One / 2)) * cellSize;
+                PixelOffset = (GridOffset.ToVector2() + (Vector2.One / 2)) * cellSize;
             }
         }
     }
