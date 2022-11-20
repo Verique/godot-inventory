@@ -9,19 +9,18 @@ namespace Grate.Inventory
         public int Id { get; private set; }
         private Dictionary<Vector2Int, InventoryItemModuleNode> _modulesByLayout = new Dictionary<Vector2Int, InventoryItemModuleNode>();
 
-        public InventoryItemNode(IInventoryItem item, Grid grid)
+        public InventoryItemNode(InventoryItem item, Grid grid, Vector2Int position)
         {
             Id = item.Id;
-            if (item.Position == null) return;
 
-            foreach (var (module, offset) in item.Layout)
+            foreach (var module in item.Layout)
             {
-                var pos = (offset) * grid.CellSize;
+                var pos = (module.Offset) * grid.CellSize;
                 var moduleNode = new InventoryItemModuleNode(item.Color, pos.ToVector2(), module);
                 this.AddChild(moduleNode);
-                _modulesByLayout.Add(offset + item.Position, moduleNode);
+                _modulesByLayout.Add(module.Offset + position, moduleNode);
             }
-            RectPosition = grid.LeftTopPointOfCell(item.Position);
+            RectPosition = grid.LeftTopPointOfCell(position);
         }
 
         public void Pick()

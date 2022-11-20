@@ -28,11 +28,11 @@ namespace Grate.Inventory.Utils
             return NormalizeLayout(layout);
         }
 
-        public static IReadOnlyCollection<(InventoryModule module, Vector2Int offset)> GenerateItemLayout(int count, InventoryItem parent)
+        public static IReadOnlyCollection<InventoryModule> GenerateItemLayout(int count, InventoryItem parent)
         {
             var layout = GenerateLayout(count);
             return layout
-                .Select(x => (new InventoryModule(x, GetNeighbours(x).Where(neighbour => !layout.Contains(neighbour)), parent), x))
+                .Select(x => (new InventoryModule(x, GetNeighbours(x).Where(neighbour => !layout.Contains(neighbour)), parent)))
                 .ToList();
         }
 

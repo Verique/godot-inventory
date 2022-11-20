@@ -65,9 +65,9 @@ namespace Grate.Inventory
             }
         }
 
-        public void CreateItem(IInventoryItem item)
+        public void CreateItem(InventoryItem item, Vector2Int pos)
         {
-            var node = new InventoryItemNode(item, Grid);
+            var node = new InventoryItemNode(item, Grid, pos);
             AddChild(node);
             _itemViewById.Add(item.Id, node);
         }
@@ -96,8 +96,8 @@ namespace Grate.Inventory
 
         private InventoryItemNode GetItemNodeById(int id)
         {
-            if (!_itemViewById.ContainsKey(id)) throw new Exception($"No item with id {id}");
-            return _itemViewById[id];
+            if (!_itemViewById.TryGetValue(id, out var result)) throw new Exception($"No item with id {id}");
+            return result;
         }
     }
 }

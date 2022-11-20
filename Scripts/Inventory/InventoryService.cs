@@ -11,6 +11,8 @@ namespace Grate.Inventory
         private Inventory _inventory;
         private InventoryNode _inventoryNode;
 
+        // TODO: maybe should contain only offset info
+        // if grid is staying in node
         private PickedItemInfo? _pickedItem { get; set; }
         private Vector2Int _gridSize;
 
@@ -83,9 +85,10 @@ namespace Grate.Inventory
             for (int x = 0; x < _gridSize.x; x++)
                 for (int y = 0; y < _gridSize.y; y++)
                 {
-                    if (_inventory.TryPlace(item, new Vector2Int(x, y)))
+                    var newPos = new Vector2Int(x, y);
+                    if (_inventory.TryPlace(item, newPos))
                     {
-                        _inventoryNode.CreateItem(item);
+                        _inventoryNode.CreateItem(item, newPos);
                         return;
                     }
                 }
