@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://buglvq6ccwji5"]
+
+[ext_resource type="Script" path="res://Scripts/Inventory/Nodes/Inventory.cs" id="1_w380a"]
+[ext_resource type="Script" path="res://Scripts/Inventory/Nodes/InventoryDrawer.cs" id="2_3yuhc"]
+
+[node name="Inventory" type="Node2D" node_paths=PackedStringArray("testAddButton")]
+position = Vector2(262, 196)
+script = ExtResource("1_w380a")
+testAddButton = NodePath("Button")
+
+[node name="Button" type="Button" parent="."]
+offset_left = -224.0
+offset_top = -161.0
+offset_right = -65.0
+offset_bottom = -113.0
+text = "Spawn"
+
+[node name="InventoryDrawer" type="Node2D" parent="."]
+script = ExtResource("2_3yuhc")

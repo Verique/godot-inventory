@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://bmvq8ka8a8you"]
+
+[ext_resource type="Script" path="res://Scripts/Inventory/Nodes/Item.cs" id="1_1gohn"]
+[ext_resource type="PackedScene" uid="uid://bbb58ged32afn" path="res://Scenes/ItemCell.tscn" id="2_ra0l0"]
+
+[node name="Item" type="Node2D"]
+script = ExtResource("1_1gohn")
+_cellScene = ExtResource("2_ra0l0")
